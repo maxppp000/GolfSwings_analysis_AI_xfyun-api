@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-通用工具模块
-合并和优化重复的工具函数
-"""
-
 import os
 import json
 import glob

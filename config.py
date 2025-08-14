@@ -98,15 +98,6 @@ class DemoConfig:
     
     # 生成演示关键帧数据
     def _create_demo_keyframe(action, frame_num):
-        """创建演示关键帧数据
-        
-        Args:
-            action (str): 动作类型
-            frame_num (int): 帧号
-            
-        Returns:
-            dict: 关键帧数据
-        """
         return {
             'action': action,
             'user_image': f'dome_show/key_frames/{action}_{frame_num}.jpg',
@@ -115,11 +106,6 @@ class DemoConfig:
         }
     
     def _create_demo_ai_result(action, frame_num):
-        """创建演示AI结果数据
-        Args:
-            action (str): 动作类型
-            frame_num (int): 帧号
-        """
         return {
             'action': action,
             'description': '正在加载分析结果...',

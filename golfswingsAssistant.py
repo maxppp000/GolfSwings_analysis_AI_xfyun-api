@@ -37,22 +37,15 @@ class Ws_Param(object):
         self.ImageUnderstanding_url = imageunderstanding_url
 
     def create_url(self):
-        """
-        生成带鉴权参数的WebSocket URL
-        
-        Returns:
-            str: 包含鉴权参数的完整WebSocket URL
-        """
+        """生成带鉴权参数的WebSocket URL"""
         # 生成RFC1123格式的时间戳
         now = datetime.now()
         date = format_date_time(mktime(now.timetuple()))
 
-        # 拼接字符串
         signature_origin = "host: " + self.host + "\n"
         signature_origin += "date: " + date + "\n"
         signature_origin += "GET " + self.path + " HTTP/1.1"
 
-        # 进行hmac-sha256进行加密
         signature_sha = hmac.new(self.APISecret.encode('utf-8'),
                                  signature_origin.encode('utf-8'),
                                  digestmod=hashlib.sha256).digest()
@@ -63,13 +56,11 @@ class Ws_Param(object):
 
         authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
 
-        # 将请求的鉴权参数组合为字典
         v = {
             "authorization": authorization,
             "date": date,
             "host": self.host
         }
-        # 拼接鉴权参数，生成url
         url = self.ImageUnderstanding_url + '?' + urlencode(v)
         return url
 
@@ -84,7 +75,6 @@ class SparkWebSocketClient:
             appid (str): 星火API的应用ID
             api_secret (str): 星火API的密钥
             api_key (str): 星火API的密钥
-            url (str): WebSocket连接URL
         """
         self.appid = appid
         self.api_secret = api_secret
@@ -95,15 +85,7 @@ class SparkWebSocketClient:
         self.done_event = threading.Event()
     
     def gen_params(self, question):
-        """
-        生成请求参数
-        
-        Args:
-            question: 要发送的问题或内容
-            
-        Returns:
-            dict: 包含请求参数的字典
-        """
+        """生成请求参数"""
         data = {
             "header": {
                 "app_id": self.appid,
@@ -125,13 +107,7 @@ class SparkWebSocketClient:
         return data
     
     def on_message(self, ws, message):
-        """
-        处理接收到的消息
-        
-        Args:
-            ws: WebSocket连接对象
-            message (str): 接收到的消息
-        """
+        """处理接收到的消息"""
         data = json.loads(message)
         code = data['header']['code']
         if code != 0:
@@ -147,33 +123,13 @@ class SparkWebSocketClient:
                 ws.close()
     
     def on_error(self, ws, error):
-        """
-        处理WebSocket错误
-        
-        Args:
-            ws: WebSocket连接对象
-            error: 错误信息
-        """
         logging.error(f"WebSocket错误: {error}")
         self.done_event.set()
     
     def on_close(self, ws, *args):
-        """
-        处理WebSocket连接关闭
-        
-        Args:
-            ws: WebSocket连接对象
-            *args: 其他参数
-        """
         logging.info("WebSocket连接已关闭")
     
     def on_open(self, ws):
-        """
-        处理WebSocket连接打开
-        
-        Args:
-            ws: WebSocket连接对象
-        """
         logging.info("WebSocket连接已建立")
         
         def run(*args):
@@ -182,15 +138,6 @@ class SparkWebSocketClient:
         thread.start_new_thread(run, ())
     
     def send_request(self, question):
-        """
-        发送请求并返回结果
-        
-        Args:
-            question: 要发送的问题或内容
-            
-        Returns:
-            str: API返回的答案
-        """
         self.question = question
         self.result = {"answer": ""}
         self.done_event.clear()
@@ -210,11 +157,6 @@ class SparkWebSocketClient:
 
 
 def assistant_answer(action, img_path, subdir=None):
-    """
-    调用星火API，返回针对特定动作的分析结果字符串。异常时返回错误信息字符串。
-    action: 动作类型，如'Preparation', 'Top_of_Backswing', 'Impact', 'Finish'
-    img_path: 只需传入图片文件名，subdir为static/uploads下的子目录
-    """
     from config import SparkAPIConfig
     
     appid = SparkAPIConfig.APPID
@@ -222,7 +164,6 @@ def assistant_answer(action, img_path, subdir=None):
     api_key = SparkAPIConfig.API_KEY
     imageunderstanding_url = SparkAPIConfig.IMAGE_UNDERSTANDING_URL
 
-    # 构造图片绝对路径
     if subdir:
         img_path_full = f'static/uploads/{subdir}/key_frames/{img_path}'
     else:
@@ -257,16 +198,6 @@ def assistant_answer(action, img_path, subdir=None):
     return result
 
 def batch_assistant_analysis(actions_and_images, subdir=None):
-    """
-    批量分析多个动作图片
-    
-    Args:
-        actions_and_images (list): 动作和图片的列表，格式为[(action, img_path), ...]
-        subdir (str, optional): 子目录名
-        
-    Returns:
-        list: 分析结果列表
-    """
     results = []
     
     def process_batch(batch, batch_index):
@@ -284,7 +215,6 @@ def batch_assistant_analysis(actions_and_images, subdir=None):
                 batch_results.append({"action": action, "result": str(e), "success": False})
         return batch_results
     
-    # 分批处理，每批最多3个请求
     batch_size = 2
     for i in range(0, len(actions_and_images), batch_size):
         batch = actions_and_images[i:i + batch_size]

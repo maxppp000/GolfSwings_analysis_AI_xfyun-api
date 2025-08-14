@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-缓存管理模块
-统一处理所有缓存相关的逻辑
-"""
-
 import os
 import json
 import glob
@@ -22,7 +17,6 @@ class CacheManager:
         """获取缓存文件路径"""
         cache_dir = os.path.join(self.upload_folder, subdir, 'result_video')
         
-        # 首先尝试查找正常的动作JSON文件
         cache_filename = f"desc_{subdir}_{action}_*.json"
         pattern = os.path.join(cache_dir, cache_filename)
         matches = glob.glob(pattern)
@@ -31,7 +25,6 @@ class CacheManager:
             matches.sort(key=os.path.getmtime, reverse=True)
             return matches[0]
         
-        # 如果没有找到正常文件，尝试查找未识别动作的JSON文件
         unrecognized_filename = f"desc_{subdir}_Unrecognized_{action}.json"
         unrecognized_pattern = os.path.join(cache_dir, unrecognized_filename)
         if os.path.exists(unrecognized_pattern):
