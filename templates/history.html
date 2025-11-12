@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>历史挥杆分析</title>
+    <title>Analysis History</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         .history-container {
@@ -188,12 +188,12 @@
     </style>
 </head>
 <body>
-    <a href="/" class="back-btn">← 返回首页</a>
+    <a href="/" class="back-btn">← Back Home</a>
     
     <div class="history-container">
         <div class="history-header">
-            <h1>历史挥杆分析</h1>
-            <p>查看您之前分析过的挥杆视频</p>
+            <h1>Analysis History</h1>
+            <p>Review every golf swing video you have analyzed.</p>
         </div>
         
         {% if history_list %}
@@ -208,17 +208,17 @@
                     <div class="history-item-info">
                         <div class="info-item">
                             <span class="info-icon">📹</span>
-                            <span>原始视频</span>
+                            <span>Original Video</span>
                         </div>
                         <div class="info-item">
                             <span class="info-icon">🖼️</span>
-                            <span>{{ item.keyframe_count }} 个关键帧</span>
+                            <span>{{ item.keyframe_count }} key frames</span>
                         </div>
                     </div>
                     
                     <div class="history-item-actions">
                         <a href="/results/{{ item.subdir }}/{{ item.original_video }}" class="action-btn view-btn">
-                            查看分析结果
+                            View Analysis Results
                         </a>
                     </div>
                 </div>
@@ -227,10 +227,10 @@
         {% else %}
             <div class="empty-state">
                 <div class="empty-state-icon">📁</div>
-                <h3>暂无历史分析记录</h3>
-                <p>您还没有上传过视频进行分析，快去上传您的第一个挥杆视频吧！</p>
+                <h3>No analysis history yet</h3>
+                <p>You have not uploaded a golf swing video for analysis. Start with your first upload!</p>
                 <br>
-                <a href="/" class="action-btn view-btn">开始分析</a>
+                <a href="/" class="action-btn view-btn">Start Analyzing</a>
             </div>
         {% endif %}
     </div>

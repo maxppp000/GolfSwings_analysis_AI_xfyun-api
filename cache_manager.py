@@ -7,14 +7,14 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 class CacheManager:
-    """缓存管理器类"""
+    """Manage cached AI analysis data stored alongside uploads."""
     
     def __init__(self, upload_folder: str):
-        """初始化缓存管理器"""
+        """Initialize the cache manager."""
         self.upload_folder = upload_folder
     
     def get_cache_path(self, subdir: str, action: str) -> Optional[str]:
-        """获取缓存文件路径"""
+        """Return the path to the cached JSON file for a given action."""
         cache_dir = os.path.join(self.upload_folder, subdir, 'result_video')
         
         cache_filename = f"desc_{subdir}_{action}_*.json"
@@ -33,16 +33,16 @@ class CacheManager:
         return None
     
     def load_cache_data(self, cache_path: str) -> Optional[Dict[str, Any]]:
-        """加载缓存数据"""
+        """Load cached analysis data from disk."""
         try:
             with open(cache_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            logging.error(f"读取缓存文件失败: {e}")
+            logging.error(f"Failed to read cache file: {e}")
             return None
     
     def save_cache_data(self, subdir: str, filename: str, data: Dict[str, Any]) -> bool:
-        """保存缓存数据"""
+        """Persist cached analysis data."""
         try:
             cache_dir = os.path.join(self.upload_folder, subdir, 'result_video')
             os.makedirs(cache_dir, exist_ok=True)
@@ -53,14 +53,14 @@ class CacheManager:
             with open(cache_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             
-            logging.info(f"已保存缓存数据: {cache_path}")
+            logging.info(f"Saved cache data: {cache_path}")
             return True
         except Exception as e:
-            logging.error(f"保存缓存文件失败: {e}")
+            logging.error(f"Failed to save cache file: {e}")
             return False
     
     def get_cached_analysis(self, subdir: str, action: str) -> Optional[Dict[str, Any]]:
-        """获取缓存的分析结果"""
+        """Retrieve cached analysis results if they exist."""
         cache_path = self.get_cache_path(subdir, action)
         if cache_path:
             return self.load_cache_data(cache_path)
@@ -68,13 +68,13 @@ class CacheManager:
     
     def save_analysis_result(self, subdir: str, action: str, img_filename: str, 
                            analysis_result: str, image_path: str) -> bool:
-        """保存分析结果到缓存"""
+        """Save analysis results to the cache."""
         cache_data = {
             'image_path': image_path,
             'subdir': subdir,
             'filename': img_filename,
             'description': analysis_result,
-            'prompt': f"{action}动作",
+            'prompt': f"{action} frame analysis",
             'action': action,
             'frame_idx': None,
             'timestamp': datetime.now().isoformat()
@@ -83,14 +83,14 @@ class CacheManager:
         return self.save_cache_data(subdir, img_filename, cache_data)
     
     def clear_cache(self, subdir: str, filename: str) -> bool:
-        """清除指定文件的缓存"""
+        """Remove cached progress data for the provided upload."""
         try:
             progress_path = os.path.join(self.upload_folder, subdir, f'progress_{filename}.txt')
             if os.path.exists(progress_path):
                 os.remove(progress_path)
-                logging.info(f"已清除进度缓存: {progress_path}")
+                logging.info(f"Cleared progress cache: {progress_path}")
                 return True
         except Exception as e:
-            logging.error(f"清除缓存失败: {e}")
+            logging.error(f"Failed to clear cache: {e}")
             return False
-        return False 
+        return False

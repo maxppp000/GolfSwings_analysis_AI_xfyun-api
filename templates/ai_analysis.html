@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI分析结果 - 高尔夫挥杆分析</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI AnalysisResults - Golf Swing Analysis</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
         body {
             background: linear-gradient(135deg, #0a3d2f 0%, #1a6b54 100%);
             color: #fff;
@@ -20,7 +20,8 @@
             border-radius: 24px;
             overflow: hidden;
             box-shadow: 0 12px 32px rgba(0,0,0,0.18);
-            max-width: 375px;
+            max-width: 420px;
+            width: 100%;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -222,11 +223,11 @@
 <body>
     <div class="mobile-prototype">
         <div class="header">
-            <p>GolfSwingsAssistant-AI分析您的挥杆动作</p>
+            <p>GolfSwingsAssistant - AI analysis of your swing</p>
         </div>
         <div class="content">
             <div class="analysis-section">
-                <div class="analysis-title">动作分析详情</div>
+                <div class="analysis-title">Action Analysis Details</div>
                 
                 {% if ai_results %}
                     {% for result in ai_results %}
@@ -235,13 +236,13 @@
                             <div class="action-icon">{{ loop.index }}</div>
                             <div class="action-name">
                                 {% if result.action == 'Preparation' %}
-                                    准备动作
+                                    Preparation
                                 {% elif result.action == 'Top_of_Backswing' %}
-                                    上杆顶点
+                                    Top of Backswing
                                 {% elif result.action == 'Impact' %}
-                                    击球瞬间
+                                    Impact
                                 {% elif result.action == 'Finish' %}
-                                    收杆动作
+                                    Finish
                                 {% else %}
                                     {{ result.action }}
                                 {% endif %}
@@ -250,40 +251,40 @@
                         
                         {% if result.image_path %}
                         <img class="action-image" src="{{ url_for('static', filename=result.image_path) }}" 
-                             alt="{{ result.action }}动作图片" onclick="openModal(this.src, '{{ result.action }}')">
+                             alt="{{ result.action }} image" onclick="openModal(this.src, '{{ result.action }}')">
                         {% endif %}
                         
                         <div class="analysis-content" id="analysis-content-{{ loop.index0 }}">
                             {% if result.description %}
                                 {{ result.description }}
                             {% else %}
-                                <div class="no-data">暂无分析结果</div>
+                                <div class="no-data">No analysis results yet</div>
                             {% endif %}
                         </div>
                         
                         {% if result.timestamp %}
                         <div class="timestamp">
-                            分析时间: {{ result.timestamp[:19].replace('T', ' ') }}
+                            Analysis Time: {{ result.timestamp[:19].replace('T', ' ') }}
                         </div>
                         {% endif %}
                     </div>
                     {% endfor %}
                 {% else %}
                     <div class="no-data">
-                        暂无AI分析结果<br>
-                        请确保分析过程已完成
+                        No AI analysis results yet<br>
+                        Please ensure the analysis process is complete
                     </div>
                 {% endif %}
             </div>
         </div>
         
         <div class="footer">
-            <button class="footer-btn back-btn" onclick="window.history.back()">返回结果页</button>
-            <button class="footer-btn" onclick="window.location.href='{{ url_for('index') }}'">开始新的分析</button>
+            <button class="footer-btn back-btn" onclick="window.history.back()">Back to Results</button>
+            <button class="footer-btn" onclick="window.location.href='{{ url_for('index') }}'">Start New Analysis</button>
         </div>
     </div>
     
-    <!-- 模态框 -->
+    <!-- Image modal -->
     <div id="imageModal" class="modal">
         <span class="close" onclick="closeModal()">&times;</span>
         <div class="modal-content">
@@ -296,11 +297,11 @@
             const modal = document.getElementById('imageModal');
             const modalImage = document.getElementById('modalImage');
             modalImage.src = imageSrc;
-            modalImage.alt = actionName + '动作图片';
+            modalImage.alt = actionName + ' image';
             modal.style.display = 'block';
             document.body.style.overflow = 'hidden';
             
-            // 强制重绘后添加动画类
+            // Force repaint then add the animation class.
             setTimeout(() => {
                 modal.classList.add('show');
             }, 10);
@@ -310,14 +311,14 @@
             const modal = document.getElementById('imageModal');
             modal.classList.remove('show');
             
-            // 等待动画完成后隐藏模态框
+            // Hide the modal after the fade-out animation finishes.
             setTimeout(() => {
                 modal.style.display = 'none';
                 document.body.style.overflow = 'auto';
             }, 300);
         }
         
-        // 点击模态框背景关闭
+        // Click modal background to close
         window.onclick = function(event) {
             const modal = document.getElementById('imageModal');
             if (event.target === modal) {
@@ -325,19 +326,19 @@
             }
         }
         
-        // ESC键关闭模态框
+        // ESC key to close modal
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeModal();
             }
         });
         
-        // 加载JSON分析数据
+        // Load JSON analysis data when available.
         function loadJsonAnalysisData() {
             const actionItems = document.querySelectorAll('.action-item');
             
             actionItems.forEach((item, index) => {
-                // 检查是否有JSON数据需要加载
+                // Only load when a JSON file is provided.
                 const jsonPath = item.dataset.json;
                 if (jsonPath) {
                     loadAnalysisFromJson(jsonPath, index);
@@ -345,31 +346,31 @@
             });
         }
         
-        // 从JSON文件加载分析数据
+        // Fetch analysis data from a JSON file.
         function loadAnalysisFromJson(jsonPath, index) {
             const analysisContent = document.getElementById(`analysis-content-${index}`);
             if (!analysisContent) return;
             
-            // 显示加载状态
-            analysisContent.innerHTML = '<div class="no-data">正在加载分析结果...</div>';
+            // Show a loading state.
+            analysisContent.innerHTML = '<div class="no-data">LoadingAnalysisResults...</div>';
             
-            // 加载JSON文件
+            // Fetch the JSON file.
             fetch(jsonPath)
                 .then(response => response.json())
                 .then(data => {
                     if (data.description) {
                         analysisContent.innerHTML = data.description;
                     } else {
-                        analysisContent.innerHTML = '<div class="no-data">暂无分析结果</div>';
+                        analysisContent.innerHTML = '<div class="no-data">No analysis results yet</div>';
                     }
                 })
                 .catch(error => {
-                    console.error('加载分析结果失败:', error);
-                    analysisContent.innerHTML = '<div class="no-data">加载分析结果失败，请稍后重试。</div>';
+                    console.error('Failed to load analysis results:', error);
+                    analysisContent.innerHTML = '<div class="no-data">Failed to load analysis results. Please try again later.</div>';
                 });
         }
         
-        // 页面加载完成后执行
+        // Run once the page has loaded.
         document.addEventListener('DOMContentLoaded', function() {
             loadJsonAnalysisData();
         });

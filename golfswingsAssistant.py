@@ -14,20 +14,20 @@ from time import mktime, sleep
 from wsgiref.handlers import format_date_time
 import os
 
-# 日志配置已在config.py中统一配置
+# Logging configuration is centralized in config.py.
 
 class Ws_Param(object):
-    """星火API WebSocket参数配置类"""
+    """Spark API WebSocket parameter helper."""
     
     def __init__(self, APPID, APIKey, APISecret, imageunderstanding_url):
         """
-        初始化WebSocket参数
+        Initialize WebSocket parameters.
         
         Args:
-            APPID (str): 星火API的应用ID
-            APIKey (str): 星火API的密钥
-            APISecret (str): 星火API的密钥
-            imageunderstanding_url (str): 图像理解API的WebSocket URL
+            APPID (str): Spark API application ID
+            APIKey (str): Spark API key
+            APISecret (str): Spark API secret
+            imageunderstanding_url (str): Image understanding WebSocket URL
         """
         self.APPID = APPID
         self.APIKey = APIKey
@@ -37,8 +37,8 @@ class Ws_Param(object):
         self.ImageUnderstanding_url = imageunderstanding_url
 
     def create_url(self):
-        """生成带鉴权参数的WebSocket URL"""
-        # 生成RFC1123格式的时间戳
+        """Generate a signed WebSocket URL."""
+        # Build an RFC1123 timestamp.
         now = datetime.now()
         date = format_date_time(mktime(now.timetuple()))
 
@@ -65,16 +65,16 @@ class Ws_Param(object):
         return url
 
 class SparkWebSocketClient:
-    """星火API WebSocket客户端通用类"""
+    """Generic Spark API WebSocket client."""
     
     def __init__(self, appid, api_secret, api_key, url):
         """
-        初始化WebSocket客户端
+        Initialize the WebSocket client.
         
         Args:
-            appid (str): 星火API的应用ID
-            api_secret (str): 星火API的密钥
-            api_key (str): 星火API的密钥
+            appid (str): Spark API application ID
+            api_secret (str): Spark API secret
+            api_key (str): Spark API key
         """
         self.appid = appid
         self.api_secret = api_secret
@@ -85,7 +85,7 @@ class SparkWebSocketClient:
         self.done_event = threading.Event()
     
     def gen_params(self, question):
-        """生成请求参数"""
+        """Build the payload for the Spark API."""
         data = {
             "header": {
                 "app_id": self.appid,
@@ -107,11 +107,11 @@ class SparkWebSocketClient:
         return data
     
     def on_message(self, ws, message):
-        """处理接收到的消息"""
+        """Handle messages from the WebSocket."""
         data = json.loads(message)
         code = data['header']['code']
         if code != 0:
-            logging.error(f'请求错误: {code}, {data}')
+            logging.error(f'Request error: {code}, {data}')
             ws.close()
         else:
             choices = data["payload"]["choices"]
@@ -123,14 +123,14 @@ class SparkWebSocketClient:
                 ws.close()
     
     def on_error(self, ws, error):
-        logging.error(f"WebSocket错误: {error}")
+        logging.error(f"WebSocketError: {error}")
         self.done_event.set()
     
     def on_close(self, ws, *args):
-        logging.info("WebSocket连接已关闭")
+        logging.info("WebSocket connection closed")
     
     def on_open(self, ws):
-        logging.info("WebSocket连接已建立")
+        logging.info("WebSocket connection established")
         
         def run(*args):
             data = self.gen_params(self.question)
@@ -151,7 +151,7 @@ class SparkWebSocketClient:
                                    on_open=self.on_open)
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
         
-        # 等待结果
+        # Wait for the final response.
         self.done_event.wait(timeout=30)
         return self.result["answer"]
 
@@ -173,25 +173,40 @@ def assistant_answer(action, img_path, subdir=None):
         with open(img_path_full, 'rb') as f:
             imagedata = f.read()
     except Exception as e:
-        logging.error(f"图片读取失败: {e}")
-        return f"图片读取失败: {e}"
+        logging.error(f"Failed to read image: {e}")
+        return f"Failed to read image: {e}"
 
-    # 构造针对特定动作的prompt
+    # Build prompts tailored to each action.
     action_prompts = {
-        'Preparation': "请分析我的这张高尔夫球准备动作图片，重点关注站位、握杆姿势、身体平衡和准备阶段的要点。请用简洁明了的语言描述，控制在150字以内。",
-        'Top_of_Backswing': "请分析我的这张高尔夫球上杆顶点图片，重点关注上杆幅度、身体旋转、手臂位置和上杆顶点的技术要点。请用简洁明了的语言描述，控制在150字以内。",
-        'Impact': "请分析我的这张高尔夫球击球瞬间图片，重点关注击球姿势、身体角度、手臂位置和击球瞬间的技术要点。请用简洁明了的语言描述，控制在150字以内。",
-        'Finish': "请分析我的这张高尔夫球收杆图片，重点关注收杆姿势、身体平衡、手臂位置和收杆阶段的技术要点。请用简洁明了的语言描述，控制在150字以内。"
+        'Preparation': (
+            "Provide a concise golf-swing preparation analysis. Focus on stance width, grip, shoulder alignment, and weight "
+            "distribution. Limit the response to approximately 150 words."
+        ),
+        'Top_of_Backswing': (
+            "Provide a concise top-of-backswing analysis. Highlight rotation depth, trail leg stability, wrist hinge, and "
+            "spine tilt. Limit the response to approximately 150 words."
+        ),
+        'Impact': (
+            "Analyze the impact frame. Comment on shaft lean, hip clearance, connection between arms and torso, and head "
+            "position. Limit the response to approximately 150 words."
+        ),
+        'Finish': (
+            "Analyze the finish position. Discuss balance, rotation completeness, arm extension, and tempo. "
+            "Limit the response to approximately 150 words."
+        )
     }
     
-    prompt = action_prompts.get(action, "请分析这张高尔夫球挥杆动作图片的技术要点。请用简洁明了的语言描述，控制在150字以内。")
+    prompt = action_prompts.get(
+        action,
+        "Provide a concise analysis of the golf-swing frame and highlight the most important technical checkpoints within roughly 150 words."
+    )
     
     text = [
         {"role": "user", "content": str(base64.b64encode(imagedata), 'utf-8'), "content_type": "image"},
         {"role": "user", "content": prompt}
     ]
 
-    # 使用通用WebSocket客户端
+    # Send the request through the generic WebSocket client.
     client = SparkWebSocketClient(appid, api_secret, api_key, imageunderstanding_url)
     result = client.send_request(text)
     
@@ -201,12 +216,12 @@ def batch_assistant_analysis(actions_and_images, subdir=None):
     results = []
     
     def process_batch(batch, batch_index):
-        """处理批次请求"""
+        """Process a batch of prompts."""
         batch_results = []
         for action, img_path in batch:
             try:
                 def process_single_request(action, img_path):
-                    """处理单个请求"""
+                    """Send a single request to the assistant."""
                     result = assistant_answer(action, img_path, subdir)
                     return {"action": action, "result": result, "success": True}
                 
@@ -222,6 +237,4 @@ def batch_assistant_analysis(actions_and_images, subdir=None):
         results.extend(batch_results)
     
     return results
-
-
 

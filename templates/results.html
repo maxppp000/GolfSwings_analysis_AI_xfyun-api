@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>高尔夫挥杆分析 - 结果</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golf Swing Analysis - Results</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; }
         body {
             background: linear-gradient(135deg, #0a3d2f 0%, #1a6b54 100%);
             color: #fff;
@@ -35,7 +35,8 @@
             border-radius: 24px;
             overflow: hidden;
             box-shadow: 0 12px 32px rgba(0,0,0,0.18);
-            max-width: 375px;
+            max-width: 420px;
+            width: 100%;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -154,7 +155,7 @@
         }
         .ai-analysis-btn:hover { background: #e55a2b; }
         
-        /* 分析结果区域样式 */
+        /* Analysis results section styles */
         .analysis-section {
             width: 100%;
             background: #fff;
@@ -208,7 +209,7 @@
             transition: background 0.2s;
         }
         .footer-btn:active, .footer-btn:hover { background: #0a3d2f; }
-        /* 放大图片弹窗 */
+        /* Fullscreen image modal */
         .modal {
             display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100vw; height: 100vh;
             background: rgba(0,0,0,0.85); align-items: center; justify-content: center;
@@ -252,90 +253,90 @@
     </style>
 </head>
 <body>
-    <!-- 移动端原型 -->
+    <!-- Mobile Prototype -->
     <div class="mobile-prototype">
         <div class="header">
-            <p>查看您的挥杆分析与关键动作</p>
+            <p>View Your Swing Analysis and Key Movements</p>
         </div>
         <div class="content">
-            <!-- 分析视频区 -->
+            <!-- Analysis video section -->
             <div class="video-section">
-                <div class="video-title">分析结果视频</div>
+                <div class="video-title">Analysis Result Video</div>
                 <div class="video-controls">
-                    <button class="video-btn active" id="btnAnalysis">分析结果</button>
-                    <button class="video-btn" id="btnOriginal">原始视频</button>
+                    <button class="video-btn active" id="btnAnalysis">Analyzed Video</button>
+                    <button class="video-btn" id="btnOriginal">Original Video</button>
                 </div>
-                <video class="video-player" id="mainVideo" controls preload="metadata" width="100%" poster="#">
+                <video class="video-player" id="mainVideo" controls preload="metadata" width="100%" poster="#" playsinline webkit-playsinline>
                     <source id="videoSource" src="{{ url_for('download_file', subdir=result.output_video.split('/')[0], filename=result.output_video.split('/')[-1]) }}" type="video/mp4">
-                    您的浏览器不支持视频播放。
+                    Your browser does not support video playback.
                 </video>
-                <a class="download-link" href="{{ url_for('download_file', subdir=result.output_video.split('/')[0], filename=result.output_video.split('/')[-1]) }}">下载分析视频</a>
+                <a class="download-link" href="{{ url_for('download_file', subdir=result.output_video.split('/')[0], filename=result.output_video.split('/')[-1]) }}">Download Analysis Video</a>
             </div>
-            <!-- 关键帧对比区 -->
+            <!-- Keyframe comparison section -->
             <div class="keyframes-section">
-                <div class="keyframes-title">关键动作对比</div>
+                <div class="keyframes-title">Key Movement Comparison</div>
                 <div class="keyframes-table">
                     <div class="keyframes-header">
-                        <span>你的动作</span>
-                        <span>标准动作</span>
+                        <span>Your Motion</span>
+                        <span>Standard Motion</span>
                     </div>
                     {% for frame in result.key_frames %}
                     <div class="keyframes-row">
-                        <!-- 用户动作关键帧 -->
+                        <!-- User key frame -->
                         <div class="keyframe-item" data-img="{{ url_for('static', filename=frame.user_image if frame.user_image else 'uploads/standard/key_frames/Unrecognized.jpg') }}" data-label="{{ frame.action }}" data-frame-idx="{{ loop.index0 }}" data-json="{{ frame.user_json if frame.user_json else '' }}">
                             {% if frame.user_image %}
                             <img class="keyframe-img" src="{{ url_for('static', filename=frame.user_image) }}" alt="{{ frame.action }}">
                             {% else %}
-                            <img class="keyframe-img" src="{{ url_for('static', filename='uploads/standard/key_frames/Unrecognized.jpg') }}" alt="未识别">
+                            <img class="keyframe-img" src="{{ url_for('static', filename='uploads/standard/key_frames/Unrecognized.jpg') }}" alt="Unrecognized">
                             {% endif %}
                             <div class="keyframe-label">{{ frame.action }}</div>
                         </div>
-                        <!-- 标准动作关键帧 -->
-                        <div class="keyframe-item" data-img="{{ url_for('static', filename=frame.standard_image) }}" data-label="标准 {{ frame.action }}">
-                            <img class="keyframe-img" src="{{ url_for('static', filename=frame.standard_image) }}" alt="标准 {{ frame.action }}">
+                        <!-- Standard reference key frame -->
+                        <div class="keyframe-item" data-img="{{ url_for('static', filename=frame.standard_image) }}" data-label="Standard {{ frame.action }}">
+                            <img class="keyframe-img" src="{{ url_for('static', filename=frame.standard_image) }}" alt="Standard {{ frame.action }}">
                         </div>
                     </div>
                     {% endfor %}
                 </div>
             </div>
-            <!-- 分析结果显示区域 -->
+            <!-- Analysis results display -->
             <div class="analysis-section" id="analysisSection" style="display: none;">
-                <div class="analysis-title">动作分析结果</div>
+                <div class="analysis-title">Motion Analysis Results</div>
                 <div class="analysis-content" id="analysisContent">
-                    <p>点击关键帧查看详细分析结果</p>
+                    <p>Click a key frame to view detailed analysis notes.</p>
                 </div>
             </div>
             
-            <!-- 报告区域 -->
+            <!-- Report links -->
             <div class="report-section">
                 <a href="{{ url_for('show_guide', key_frames=result.key_frames|tojson, differences_summary=result.differences_summary|tojson, detected_states=result.detected_states|tojson) }}">
-                    <button class="report-btn">查看正确姿态指南</button>
+                    <button class="report-btn">View Posture Guide</button>
                 </a>
                 <a href="{{ url_for('show_ai_analysis', subdir=result.output_video.split('/')[0], filename=result.input_video.split('/')[-1]) }}">
-                    <button class="ai-analysis-btn">查看AI分析结果</button>
+                    <button class="ai-analysis-btn">View AI Analysis</button>
                 </a>
             </div>
         </div>
-        <!-- 底部操作栏 -->
+        <!-- Bottom actions -->
         <div class="footer">
-            <button class="footer-btn" onclick="window.location.href='{{ url_for('index') }}'">开始新的分析</button>
+            <button class="footer-btn" onclick="window.location.href='{{ url_for('index') }}'">Start New Analysis</button>
         </div>
     </div>
-    <!-- 放大图片弹窗 -->
+    <!-- Image modal -->
     <div class="modal" id="imgModal">
         <span class="modal-close" id="modalClose">&times;</span>
         <button class="modal-arrow" id="modalPrev" style="display:none;">&#8592;</button>
-        <img class="modal-img" id="modalImg" src="#" alt="关键帧大图">
+        <img class="modal-img" id="modalImg" src="#" alt="Key frame full view">
         <button class="modal-arrow" id="modalNext" style="display:none;">&#8594;</button>
     </div>
     <script>
-        // 视频切换
+        // Toggle between analyzed and original videos.
         const btnAnalysis = document.getElementById('btnAnalysis');
         const btnOriginal = document.getElementById('btnOriginal');
         const mainVideo = document.getElementById('mainVideo');
         const videoSource = document.getElementById('videoSource');
         
-        // 视频路径配置
+        // Configure the video sources.
         const isDemoVideo = "{{ result.output_video }}" === "dome_show/analyzed_demo_show.mp4";
         const analysisVideoSrc = isDemoVideo ? 
             "{{ url_for('demo_download_file', filename='analyzed_demo_show.mp4') }}" : 
@@ -362,17 +363,17 @@
             });
         }
         
-        // 页面初始化：设置默认视频源
+        // Initialize the default video source once the DOM is ready.
         document.addEventListener('DOMContentLoaded', function() {
-            // 默认加载分析视频（演示视频）或原视频（用户上传视频）
+            // Demo mode defaults to the analyzed clip; uploads default to the original clip.
             if (isDemoVideo) {
-                // 演示视频默认显示分析视频
+                // Demo video uses the analyzed clip by default.
                 videoSource.src = analysisVideoSrc;
                 mainVideo.load();
                 if (btnAnalysis) btnAnalysis.classList.add('active');
                 if (btnOriginal) btnOriginal.classList.remove('active');
             } else {
-                // 用户上传视频默认显示原视频
+                // Uploaded videos start with the original footage.
                 videoSource.src = originalVideoSrc;
                 mainVideo.load();
                 if (btnOriginal) btnOriginal.classList.add('active');
@@ -380,7 +381,7 @@
             }
         });
         
-        // 关键帧放大与切换
+        // Key frame zoom modal handling.
         const keyframeItems = document.querySelectorAll('.keyframe-item');
         const imgModal = document.getElementById('imgModal');
         const modalImg = document.getElementById('modalImg');
@@ -396,7 +397,7 @@
             currentIndex = index;
             modalImg.src = imgList[currentIndex];
             imgModal.classList.add('active');
-            // 控制左右按钮显示
+            // Show or hide navigation arrows.
             if(currentIndex === 0) {
                 modalPrev.style.display = 'none';
             } else {
@@ -414,7 +415,7 @@
                 imgList = Array.from(keyframeItems).map(i => i.dataset.img);
                 showModal(idx);
                 
-                // 加载JSON分析结果
+                // Load JSON-backed analysis data if provided.
                 const jsonPath = item.dataset.json;
                 if (jsonPath) {
                     loadAnalysisResult(jsonPath, item.dataset.label);
@@ -422,34 +423,34 @@
             });
         });
         
-        // 加载分析结果
+        // Fetch analysis results for the current frame.
         function loadAnalysisResult(jsonPath, actionName) {
             const analysisSection = document.getElementById('analysisSection');
             const analysisContent = document.getElementById('analysisContent');
             
-            // 显示分析区域
+            // Reveal the analysis section.
             analysisSection.style.display = 'block';
             
-            // 显示加载状态
+            // Show loading state.
             analysisContent.innerHTML = `
                 <h4>${actionName}</h4>
-                <p>正在加载分析结果...</p>
+                <p>Loading analysis results...</p>
             `;
             
-            // 加载JSON文件
+            // Fetch the JSON payload.
             fetch(jsonPath)
                 .then(response => response.json())
                 .then(data => {
                     analysisContent.innerHTML = `
                         <h4>${actionName}</h4>
-                        <p>${data.description || '暂无分析结果'}</p>
+                        <p>${data.description || 'No analysis results yet'}</p>
                     `;
                 })
                 .catch(error => {
-                    console.error('加载分析结果失败:', error);
+                    console.error('Failed to load analysis results:', error);
                     analysisContent.innerHTML = `
                         <h4>${actionName}</h4>
-                        <p>加载分析结果失败，请稍后重试。</p>
+                        <p>Unable to load analysis results. Please try again later.</p>
                     `;
                 });
         }

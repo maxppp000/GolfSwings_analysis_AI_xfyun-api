@@ -16,7 +16,7 @@ from config import GolfAnalysisConfig
 
 
 def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
-    """分析高尔夫挥杆视频"""
+    """Analyze a golf swing video and produce annotated output."""
     cap = None
     out = None
 
@@ -55,16 +55,16 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
             print(error_msg)
             return {'error': error_msg}
 
-        # YOLO模型路径
+        # Path to the YOLO model weights.
         MODEL_PATH = r"best.pt"
 
-        # 检查模型文件是否存在
+        # Ensure the model file exists.
         if not os.path.exists(MODEL_PATH):
             error_msg = f"Model file not found: {MODEL_PATH}"
             print(error_msg)
             return {'error': error_msg}
 
-        # 打印路径信息
+        # Print helpful path information for debugging.
         print(f"Input video: {VIDEO_PATH}")
         print(f"Output video: {OUTPUT_VIDEO_PATH}")
         print(f"Output keyframes: {keyframe_dir}")
@@ -134,14 +134,15 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
         }
 
         ANGLE_DIRECTIONS = {
-            "right_hip_angle": ('horizontal', 'ccw'), "right_knee_angle": ('vertical', 'ccw'), # 垂直参考，逆时针为正
-            "right_elbow_angle": ('horizontal', 'ccw'), "right_shoulder_angle": ('horizontal', 'ccw'), # 水平参考，逆时针为正
-            "left_hip_angle": ('horizontal', 'cw'), "left_knee_angle": ('vertical', 'cw'), # 水平参考，顺时针为正
-            "left_elbow_angle": ('horizontal', 'cw'), "left_shoulder_angle": ('horizontal', 'cw'), # 水平参考，顺时针为正
-            "club_angle": ('horizontal', 'ccw'), "left_wrist_angle": ('horizontal', 'ccw') # 水平参考，逆时针为正
+            # Reference axis, rotation direction
+            "right_hip_angle": ('horizontal', 'ccw'), "right_knee_angle": ('vertical', 'ccw'),
+            "right_elbow_angle": ('horizontal', 'ccw'), "right_shoulder_angle": ('horizontal', 'ccw'),
+            "left_hip_angle": ('horizontal', 'cw'), "left_knee_angle": ('vertical', 'cw'),
+            "left_elbow_angle": ('horizontal', 'cw'), "left_shoulder_angle": ('horizontal', 'cw'),
+            "club_angle": ('horizontal', 'ccw'), "left_wrist_angle": ('horizontal', 'ccw')
         }
 
-        # 初始化YOLO模型
+        # Initialize the YOLO model.
         try:
             torch.serialization.add_safe_globals([PoseModel])
             model = YOLO(MODEL_PATH)
@@ -168,17 +169,17 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
         fps = cap.get(cv2.CAP_PROP_FPS) 
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
-        # 打印视频信息
+        # Log the source video metadata.
         print(f"Video Info: {frame_width}x{frame_height}, {fps:.2f} FPS, {total_frames} Frames")
 
-        # 检查帧尺寸是否有效
+        # Validate that the frame dimensions are usable.
         if frame_width <= 0 or frame_height <= 0:
             error_msg = f"Invalid frame dimensions: {frame_width}x{frame_height}"
             print(error_msg)
             cap.release()
             return {'error': error_msg}
 
-        # 编解码器
+        # Candidate codecs for writing the output video.
         fourcc_options = [
             cv2.VideoWriter_fourcc(*'avc1'),
             cv2.VideoWriter_fourcc(*'mp4v'),
@@ -206,7 +207,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                     out.release()
                 out = None
 
-        # 如果所有编解码器都失败
+        # If no codec worked, exit early.
         if out is None or not out.isOpened():
             error_msg = f"Failed to initialize VideoWriter for path: {OUTPUT_VIDEO_PATH}\n"
             error_msg += f"Tried codecs: {fourcc_options}\n"
@@ -215,13 +216,13 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
             cap.release()
             return {'error': error_msg}
 
-        # 路径信息
+        # Confirm where the video will be saved.
         print(f"Output video will be saved to: {OUTPUT_VIDEO_PATH}")
 
 
         all_frame_data = []
 
-        # 绘图颜色配置
+        # Colors and offsets for drawing overlays.
         POINT_COLOR = GolfAnalysisConfig.POINT_COLOR
         LINE_COLOR = GolfAnalysisConfig.LINE_COLOR
         OFFSET_PX = GolfAnalysisConfig.OFFSET_PX
@@ -254,7 +255,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
 
 
         def calculate_angle_between_points(p1, p2, p3, angle_name=None):
-            """计算三个点构成的角度（带方向）"""
+            """Compute the directed angle defined by three points."""
             v1 = np.array(p1) - np.array(p2)
             v2 = np.array(p3) - np.array(p2)
 
@@ -303,7 +304,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
             return final_angle
 
         def calculate_vector_angle(v1, v2):
-            """计算两个向量之间的角度（0-360度）"""
+            """Compute the angle between two vectors (0-360 degrees)."""
             dot = v1[0] * v2[0] + v1[1] * v2[1]
             det = v1[0] * v2[1] - v1[1] * v2[0]
             angle_rad = np.arctan2(det, dot)
@@ -311,7 +312,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
             return angle_deg if angle_deg >= 0 else angle_deg + 360
 
         def draw_angle_arc(image, p1, p2, p3, angle_value, color, radius=20):
-            """在图像上绘制角度圆弧"""
+            """Draw an arc visualization for a joint angle."""
             if angle_value is None:
                 return 
 
@@ -337,7 +338,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
         def draw_pose_on_image(image, keypoints, confidences, angles):
-            """在图像上绘制关键点、骨架和角度"""
+            """Overlay keypoints, skeleton links, and angle labels."""
             for p1_idx, p2_idx, connection_name in SKELETON:
                 if not SHOW_SKELETON.get(connection_name, True):
                     continue
@@ -380,7 +381,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
         def calculate_distance(p1, p2):
-            """计算两点之间的欧氏距离"""
+            """Compute the Euclidean distance between two points."""
             return math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
 
         def strict_preparation_metric(kps, _=None):
@@ -463,7 +464,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                 return False, 0
 
         def select_best_and_judge(frame_list, keypoints_per_frame, strict_func, center_value=None, mode=None):
-            """通用严格条件筛选和判定函数"""
+            """Select the best frame based on strict or loose criteria."""
             strict_list = []
             loose_list = []
             
@@ -503,7 +504,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                     return None, 'BAD'
 
         def calculate_club_horizontal_angle(mid_club, head_club):
-            """计算球杆与水平面的夹角 (0-180度)"""
+            """Calculate the club-to-horizon angle (0-180 degrees)."""
             dx = head_club[0] - mid_club[0]
             dy = head_club[1] - mid_club[1]
 
@@ -516,13 +517,13 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                 return 180 - angle_deg
 
         def calculate_line_horizontal_angle(p1, p2):
-            """计算两点连线与水平面的夹角"""
+            """Calculate the angle between a segment and the horizontal axis."""
             dx = p2[0] - p1[0]
             dy = p2[1] - p1[1]
             return math.degrees(math.atan2(abs(dy), abs(dx)))
 
         def save_and_evaluate_keyframe(frame_idx, frame, keypoints, confidences, angles, action):
-            """保存关键帧图像并进行姿势判定"""
+            """Save the keyframe image and run pose evaluations."""
             annotated_frame = frame.copy()
             draw_pose_on_image(annotated_frame, keypoints, confidences, angles)
 
@@ -659,8 +660,8 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                     ankle_center = (left_ankle_x + right_ankle_x) / 2
                     threshold = abs(right_ankle_x - left_ankle_x) * 0.1
                     deviation = abs(shoulder_x - ankle_center)
-                    is_correct = deviation <= threshold  # 是否满足条件
-                    color = (0, 255, 0) if is_correct else (0, 0, 255)  # 绿色正确，红色错误
+                    is_correct = deviation <= threshold  # Within acceptable variance.
+                    color = (0, 255, 0) if is_correct else (0, 0, 255)  # Green = pass, red = fail.
 
                     status = "Correct" if is_correct else f"Deviation: {deviation:.1f}px"
                     text_line = f"Shoulder X Position: {shoulder_x:.1f}, Center: {ankle_center:.1f} ({status})"
@@ -782,7 +783,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
             head_club_pos = None
             middle_club_pos = None
 
-            # 检查是否有有效的检测结果
+            # Ensure the detector produced at least one valid person instance.
             if results and results[0].keypoints and results[0].keypoints.data.shape[0] > 0 and results[
                 0].keypoints.xy is not None and results[0].keypoints.conf is not None:
                 keypoints_data = results[0].keypoints.xy.cpu().numpy()
@@ -857,25 +858,25 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                         
                         if wrists_in_hip_x and wrists_below_hip_y:
                             preparation_detected = True
-                            print(f"第{frame_count}帧检测到准备动作")
+                            print(f"Detected Preparation at frame {frame_count}")
                     
                     if lw_x < ra_x:
                         state = 'Top'
-                        print(f"第{frame_count}帧进入Top动作状态")
+                        print(f"Entering Top phase at frame {frame_count}")
                         top_list.append(frame_count - 1) 
                     else:
                         preparation_list.append(frame_count - 1)
                 elif state == 'Top':
                     if ra_x < lw_x < la_x and mc_y > lw_y:
                         state = 'Impact'
-                        print(f"第{frame_count}帧进入Impact动作状态")
+                        print(f"Entering Impact phase at frame {frame_count}")
                         impact_list.append(frame_count - 1)
                     else:
                         top_list.append(frame_count - 1)
                 elif state == 'Impact':
                     if la_x < mc_x or la_x < ch_x or la_x < rw_x or la_x < lw_x:
                         state = 'Finish'
-                        print(f"第{frame_count}帧进入Finish动作状态")
+                        print(f"Entering Finish phase at frame {frame_count}")
                         finish_list.append(frame_count - 1)
                     else:
                         impact_list.append(frame_count - 1)
@@ -940,13 +941,15 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                     wrists_below_hip_y = (lw_y > max_hip_y) and (rw_y > max_hip_y)
                     
                     if not (wrists_in_hip_x and wrists_below_hip_y):
-                        print("未检测到准备动作：第一帧手腕不在髋部之间且下方")
-                        return {'error': '未检测到准备动作：第一帧手腕不在髋部之间且下方'}
+                        message = "Preparation not detected: wrists not positioned between and below the hips in the first frame."
+                        print(message)
+                        return {'error': message}
                 except Exception:
-                    print("未检测到准备动作：第一帧关键点缺失")
-                    return {'error': '未检测到准备动作：第一帧关键点缺失'}
+                    message = "Preparation not detected: keypoints missing in the first frame."
+                    print(message)
+                    return {'error': message}
             
-            print("开始第二阶段：严格条件筛选...")
+            print("Entering phase two: strict filtering...")
             
             preparation_best_idx, preparation_result = select_best_and_judge(
                 preparation_list, keypoints_per_frame, strict_preparation_metric, center_value=265)
@@ -962,22 +965,25 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
             
             if preparation_best_idx is not None:
                 key_frames["Preparation"] = preparation_best_idx + 1
-                print(f"Preparation最佳帧: {preparation_best_idx + 1}, 判定: {preparation_result}")
+                print(f"Best Preparation frame: {preparation_best_idx + 1}, result: {preparation_result}")
             
             if top_best_idx is not None:
                 key_frames["Top of Backswing"] = top_best_idx + 1
-                print(f"Top最佳帧: {top_best_idx + 1}, 判定: {top_result}")
+                print(f"Best Top frame: {top_best_idx + 1}, result: {top_result}")
             
             if impact_best_idx is not None:
                 key_frames["Impact"] = impact_best_idx + 1
-                print(f"Impact最佳帧: {impact_best_idx + 1}, 判定: {impact_result}")
+                print(f"Best Impact frame: {impact_best_idx + 1}, result: {impact_result}")
             
             if finish_best_idx is not None:
                 key_frames["Finish"] = finish_best_idx + 1
-                print(f"Finish最佳帧: {finish_best_idx + 1}, 判定: {finish_result}")
+                print(f"Best Finish frame: {finish_best_idx + 1}, result: {finish_result}")
             
             from config import GOLF_ACTIONS
-            unrecognized_msg = 'GolfSwingsAssistant懵了\n这球杆去哪儿了？没识别到完整的挥杆动作哦。\n请您帮忙检查视频是否拍全了，学学\'参考视频\' 的范儿，再上传一次呗？'
+            unrecognized_msg = (
+                "GolfSwingsAssistant cannot locate a complete swing sequence.\n"
+                "Please confirm the full motion is captured similar to the reference video and upload again."
+            )
             
             for action in GOLF_ACTIONS:
                 if action not in key_frames or key_frames[action] is None:
@@ -992,7 +998,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                         'subdir': subdir,
                         'filename': 'Unrecognized.jpg',
                         'description': unrecognized_msg,
-                        'prompt': f'{action}动作',
+                        'prompt': f'{action} frame',
                         'action': action,
                         'frame_idx': None,
                         'timestamp': datetime.datetime.now().isoformat()
@@ -1044,7 +1050,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                 
                 if hasattr(save_and_evaluate_keyframe, 'pending_analyses') and save_and_evaluate_keyframe.pending_analyses:
                     try:
-                        print(f"开始批量处理AI分析请求... 共{len(save_and_evaluate_keyframe.pending_analyses)}个关键帧")
+                        print(f"Starting batch AI analysis for {len(save_and_evaluate_keyframe.pending_analyses)} key frames...")
                         subdir = os.path.basename(output_dir)
                         
                         batch_results = batch_assistant_analysis(save_and_evaluate_keyframe.pending_analyses, subdir)
@@ -1063,7 +1069,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                             print(f"Processing AI analysis for {action}: {img_filename}")
                             if action in batch_results_dict:
                                 description = batch_results_dict[action]
-                                prompt = f"{action}动作"
+                                prompt = f"{action} frame"
                                 
                                 frame_idx = int(img_filename.split('_')[-1].replace('.jpg', ''))
                                 
@@ -1088,9 +1094,9 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
                             else:
                                 print(f"No AI analysis result for {action}")
                         
-                        print("批量AI分析处理完成")
+                        print("Batch AI analysis complete.")
                     except Exception as e:
-                        print(f"批量AI分析处理失败: {e}")
+                        print(f"Batch AI analysis failed: {e}")
                         import traceback
                         traceback.print_exc()
         except Exception as e:
@@ -1121,7 +1127,7 @@ def analyze_golf_swing(input_video_path, output_dir, progress_callback=None):
         for action, frame_idx in detected_states:
             print(f"  {action} at frame {frame_idx}")
         
-        print("\n新版本严格条件判定结果:")
+        print("\nStrict evaluation summary:")
         if 'preparation_result' in locals():
             print(f"  Preparation: {preparation_result}")
         if 'top_result' in locals():

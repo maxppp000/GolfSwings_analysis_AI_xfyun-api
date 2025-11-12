@@ -8,30 +8,30 @@ from typing import Dict, List, Optional, Tuple, Any
 from config import GOLF_ACTIONS, ErrorMessages
 
 def ensure_directories(*dirs):
-    """确保目录存在"""
+    """Ensure that each provided directory exists."""
     for dir_path in dirs:
         os.makedirs(dir_path, exist_ok=True)
 
 def get_upload_subdir(filename: str) -> str:
-    """生成唯一子目录名：日期时间+视频名（不含扩展名）"""
+    """Generate a unique subdirectory name using timestamp + original filename."""
     date_time_str = datetime.now().strftime('%Y%m%d_%H%M')
     name, _ = os.path.splitext(filename)
     return f"{date_time_str}_{name}"
 
 def construct_image_path(subdir: str, filename: str) -> str:
-    """构造图片路径"""
+    """Build the relative image path for a user keyframe."""
     return f'uploads/{subdir}/key_frames/{filename}'
 
 def get_keyframe_dir(upload_folder: str, subdir: str) -> str:
-    """获取关键帧目录路径"""
+    """Return the path to the keyframe directory."""
     return os.path.join(upload_folder, subdir, 'key_frames')
 
 def get_result_video_dir(upload_folder: str, subdir: str) -> str:
-    """获取结果视频目录路径"""
+    """Return the path to the processed video directory."""
     return os.path.join(upload_folder, subdir, 'result_video')
 
 def get_upload_subdirs(upload_folder: str, subdir: str) -> tuple:
-    """获取上传相关的所有子目录"""
+    """Return all upload-related directories for the given subdir."""
     return (
         os.path.join(upload_folder, subdir),
         get_keyframe_dir(upload_folder, subdir),
@@ -39,20 +39,20 @@ def get_upload_subdirs(upload_folder: str, subdir: str) -> tuple:
     )
 
 def get_standard_image_path(action: str) -> str:
-    """获取标准图片路径"""
+    """Build the path to the standard reference image for an action."""
     return f'uploads/standard/key_frames/standard_{action}.jpg'
 
 def get_unrecognized_image_path() -> str:
-    """获取未识别图片路径"""
+    """Build the fallback image path for unrecognized actions."""
     return 'uploads/standard/key_frames/Unrecognized.jpg'
 
 def ensure_upload_directories(upload_folder: str, subdir: str) -> None:
-    """确保上传相关目录存在"""
+    """Ensure every upload-related directory for the subdir exists."""
     for dir_path in get_upload_subdirs(upload_folder, subdir):
         os.makedirs(dir_path, exist_ok=True)
 
 def extract_path_info(image_path: str) -> Tuple[Optional[str], Optional[str]]:
-    """从图片路径中提取子目录和文件名"""
+    """Extract the subdir and filename from an image path."""
     path_parts = image_path.split('/')
     try:
         uploads_index = path_parts.index('uploads')
@@ -65,14 +65,14 @@ def extract_path_info(image_path: str) -> Tuple[Optional[str], Optional[str]]:
     return None, None
 
 def write_progress(upload_folder: str, subdir: str, filename: str, progress: Dict[str, Any]) -> None:
-    """写入进度文件"""
+    """Write analysis progress to disk."""
     progress_path = os.path.join(upload_folder, subdir, f'progress_{filename}.txt')
     os.makedirs(os.path.dirname(progress_path), exist_ok=True)
     with open(progress_path, 'w') as f:
         f.write(json.dumps(progress))
 
 def read_progress(upload_folder: str, subdir: str, filename: str) -> Dict[str, Any]:
-    """读取进度文件"""
+    """Read analysis progress from disk."""
     progress_path = os.path.join(upload_folder, subdir, f'progress_{filename}.txt')
     if not os.path.exists(progress_path):
         return {'stage': 'detect', 'percent': 0}
@@ -83,7 +83,7 @@ def read_progress(upload_folder: str, subdir: str, filename: str) -> Dict[str, A
             return {'stage': 'detect', 'percent': 0}
 
 def get_keyframe_images(upload_folder: str, subdir: str) -> Dict[str, Optional[str]]:
-    """获取关键帧图片信息"""
+    """Return the newest keyframe image for every action."""
     keyframe_dir = get_keyframe_dir(upload_folder, subdir)
     action_images = {}
     
@@ -101,7 +101,7 @@ def get_keyframe_images(upload_folder: str, subdir: str) -> Dict[str, Optional[s
     return action_images
 
 def check_keyframe_files(upload_folder: str, subdir: str) -> Dict[str, bool]:
-    """检查关键帧文件是否已生成"""
+    """Check whether all keyframe files have been generated."""
     keyframe_dir = get_keyframe_dir(upload_folder, subdir)
     file_status = {}
     
@@ -113,14 +113,14 @@ def check_keyframe_files(upload_folder: str, subdir: str) -> Dict[str, bool]:
     return file_status
 
 def get_action_from_filename(filename: str) -> Optional[str]:
-    """从文件名中提取动作类型"""
+    """Extract the action portion from a filename."""
     for action in GOLF_ACTIONS:
         if f'_{action}_' in filename:
             return action
     return None
 
 def format_keyframe_data(upload_folder: str, subdir: str) -> List[Dict[str, str]]:
-    """格式化关键帧数据"""
+    """Format keyframe metadata for template rendering."""
     key_frames = []
     keyframe_dir = get_keyframe_dir(upload_folder, subdir)
     
@@ -143,22 +143,22 @@ def format_keyframe_data(upload_folder: str, subdir: str) -> List[Dict[str, str]
     return key_frames
 
 def parse_analysis_time_from_dirname(item: str) -> str:
-    """从目录名解析分析时间"""
+    """Parse the analysis timestamp from a directory name."""
     try:
         if '_' in item:
             date_part = item.split('_')[0]
-            if len(date_part) == 8:  # YYYYMMDD格式
+            if len(date_part) == 8:  # YYYYMMDD format
                 date_obj = datetime.strptime(date_part, '%Y%m%d')
-                return date_obj.strftime('%Y年%m月%d日')
-            elif len(date_part) == 13:  # YYYYMMDD_HHMM格式
+                return date_obj.strftime('%Y-%m-%d')
+            elif len(date_part) == 13:  # YYYYMMDD_HHMM format
                 date_obj = datetime.strptime(item.split('_')[0] + '_' + item.split('_')[1], '%Y%m%d_%H%M')
-                return date_obj.strftime('%Y年%m月%d日 %H:%M')
+                return date_obj.strftime('%Y-%m-%d %H:%M')
         return item
     except:
         return item
 
 def get_history_analysis_list(upload_folder: str) -> List[Dict[str, str]]:
-    """获取历史分析列表"""
+    """Build the list of historical analyses for the history page."""
     history_list = []
     
     for item in os.listdir(upload_folder):

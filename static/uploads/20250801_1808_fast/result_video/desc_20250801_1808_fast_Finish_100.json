@@ -2,8 +2,8 @@
   "image_path": "uploads/20250801_1808_fast/key_frames/Finish_100.jpg",
   "subdir": "20250801_1808_fast",
   "filename": "Finish_100.jpg",
-  "description": "收杆姿势：上半身稳定，头部保持不动。  \n身体平衡：重心均匀分布在双脚，膝盖微弯。  \n手臂位置：双臂自然放松，球杆指向目标线。  \n技术要点：右肩-脚踝垂直角度为85.1度，符合标准。",
-  "prompt": "Finish动作",
+  "description": "Finish posture: upper body stays stable with the head quiet. Weight remains balanced between both feet with slight knee flex, arms relax, and the club points down the target line. The trail shoulder-to-ankle angle is 85.1°, which is on spec.",
+  "prompt": "Finish frame",
   "action": "Finish",
   "frame_idx": 100,
   "timestamp": "2025-08-01T18:09:23.570965"

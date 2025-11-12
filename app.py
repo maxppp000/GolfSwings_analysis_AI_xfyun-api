@@ -17,6 +17,7 @@ from common_utils import (
     ensure_upload_directories, extract_path_info, get_history_analysis_list
 )
 from cache_manager import CacheManager
+from performance_optimization import cache_result, gzip_response, log_performance
 
 
 app = Flask(__name__)
@@ -24,20 +25,20 @@ app.config['UPLOAD_FOLDER'] = FlaskConfig.UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = FlaskConfig.MAX_CONTENT_LENGTH
 app.config['ALLOWED_EXTENSIONS'] = FlaskConfig.ALLOWED_EXTENSIONS
 
-# 初始化
+# Initialize
 ensure_directories(app.config['UPLOAD_FOLDER'])
 os.environ['MODEL_PATH'] = FlaskConfig.MODEL_PATH
 cache_manager = CacheManager(app.config['UPLOAD_FOLDER'])
 
 def analyze_golf_swing_with_progress(video_path, output_dir, filename, subdir):
-    """带进度跟踪的高尔夫挥杆分析"""
+    """Run golf swing analysis with progress tracking."""
     def progress_callback(progress):
         write_progress(app.config['UPLOAD_FOLDER'], subdir, filename, progress)
     
     write_progress(app.config['UPLOAD_FOLDER'], subdir, filename, {'stage': 'detect', 'percent': 0})
     result = analyze_golf_swing(video_path, output_dir, progress_callback)
     
-    # 等待关键帧生成完成
+    # Wait for all keyframe images to be generated before continuing.
     keyframe_dir = os.path.join(output_dir, 'key_frames')
     max_wait_time = 30
     wait_count = 0
@@ -55,7 +56,7 @@ def analyze_golf_swing_with_progress(video_path, output_dir, filename, subdir):
     return result
 
 def process_ai_analysis(subdir, action_images):
-    """处理AI分析结果"""
+    """Build AI analysis results for each action."""
     ai_analysis_results = []
     
     for action in GOLF_ACTIONS:
@@ -70,7 +71,7 @@ def process_ai_analysis(subdir, action_images):
             })
             continue
         
-        # 检查缓存
+        # Return cached analysis when available.
         cached_data = cache_manager.get_cached_analysis(subdir, action)
         if cached_data and cached_data.get('description'):
             ai_analysis_results.append({
@@ -81,7 +82,7 @@ def process_ai_analysis(subdir, action_images):
             })
             continue
         
-        # 新的AI分析
+        # Run a new AI analysis when no cached version exists.
         try:
             analysis_result = assistant_answer(action, img_filename, subdir)
             image_path = construct_image_path(subdir, img_filename)
@@ -105,31 +106,38 @@ def process_ai_analysis(subdir, action_images):
     return ai_analysis_results
 
 @app.route('/', methods=['GET'])
+@gzip_response
+@cache_result(timeout=3600)
 def index():
-    """显示主页"""
+    """Display home page"""
     return render_template('index.html')
 
 @app.route('/history')
+@gzip_response
+@log_performance
 def show_history():
-    """显示历史分析页面"""
+    """Display Analysis History page"""
     history_list = get_history_analysis_list(app.config['UPLOAD_FOLDER'])
     return render_template('history.html', history_list=history_list)
 
 @app.route('/progress/<subdir>/<filename>')
+@log_performance
 def get_progress(subdir, filename):
-    """获取分析进度"""
+    """Get Analysis progress"""
     progress = read_progress(app.config['UPLOAD_FOLDER'], subdir, filename)
     return jsonify(progress)
 
 @app.route('/check_files/<subdir>/<filename>')
+@log_performance
 def check_files(subdir, filename):
-    """检查关键帧文件是否已生成"""
+    """Check if keyframe files have been generated"""
     file_status = check_keyframe_files(app.config['UPLOAD_FOLDER'], subdir)
     return jsonify(file_status)
 
 @app.route('/upload', methods=['POST'])
+@log_performance
 def upload_file():
-    """处理视频文件上传并启动分析"""
+    """Handle video file Upload and start Analysis"""
     if 'video' not in request.files:
         return redirect(request.url)
     
@@ -145,7 +153,7 @@ def upload_file():
     video_path = os.path.join(upload_dir, filename)
     file.save(video_path)
     
-    # 启动分析线程
+    # Start Analysis thread
     def run_analysis():
         analyze_golf_swing_with_progress(video_path, upload_dir, filename, subdir)
     threading.Thread(target=run_analysis).start()
@@ -153,8 +161,9 @@ def upload_file():
     return jsonify({'task_id': filename, 'subdir': subdir})
 
 @app.route('/guide')
+@gzip_response
 def show_guide():
-    """显示指导页面"""
+    """Display Posture Guide page"""
     result_data = {
         'key_frames': request.args.getlist('key_frames'),
         'differences_summary': request.args.getlist('differences_summary'),
@@ -163,8 +172,10 @@ def show_guide():
     return render_template('guide.html', result=result_data)
 
 @app.route('/ai_analysis/<subdir>/<filename>')
+@gzip_response
+@log_performance
 def show_ai_analysis(subdir, filename):
-    """显示AI分析结果页面"""
+    """Display AI Analysis Results page"""
     try:
         if subdir == DemoConfig.DEMO_SUBDIR:
             return render_template('ai_analysis.html', 
@@ -181,8 +192,10 @@ def show_ai_analysis(subdir, filename):
         return render_template('error.html', error=str(e))
 
 @app.route('/results/<subdir>/<filename>')
+@gzip_response
+@log_performance
 def show_results(subdir, filename):
-    """显示分析结果页面"""
+    """Display Analysis Results page"""
     cache_manager.clear_cache(subdir, filename)
     key_frames = format_keyframe_data(app.config['UPLOAD_FOLDER'], subdir)
     
@@ -196,8 +209,10 @@ def show_results(subdir, filename):
     return render_template('results.html', result=result_data)
 
 @app.route('/demo_results')
+@gzip_response
+@cache_result(timeout=7200)
 def show_demo_results():
-    """显示演示结果页面"""
+    """Display demo Results page"""
     result_data = {
         'input_video': f'{DemoConfig.DEMO_SUBDIR}/{DemoConfig.DEMO_FILENAME}',
         'output_video': f'{DemoConfig.DEMO_SUBDIR}/analyzed_{DemoConfig.DEMO_FILENAME}',
@@ -208,8 +223,9 @@ def show_demo_results():
     return render_template('results.html', result=result_data)
 
 @app.route('/download/<subdir>/<filename>')
+@log_performance
 def download_file(subdir, filename):
-    """下载分析结果视频文件"""
+    """Download Analysis Results video file"""
     return send_from_directory(
         os.path.join(app.config['UPLOAD_FOLDER'], subdir, 'result_video'), 
         filename, as_attachment=True
@@ -217,13 +233,14 @@ def download_file(subdir, filename):
 
 @app.route('/demo_download/<filename>')
 def demo_download_file(filename):
-    """下载演示视频文件"""
+    """Download Demo Video file"""
     return send_from_directory('static/dome_show/result_video', filename, as_attachment=True)
 
 
 @app.route('/api/describe_image', methods=['POST'])
+@log_performance
 def api_describe_image():
-    """API接口：获取图片描述"""
+    """API endpoint: Get image description"""
     try:
         data = request.get_json()
         if not data or 'image_path' not in data:
@@ -273,4 +290,5 @@ def api_describe_image():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # Use port 5001 to avoid conflicts with macOS AirPlay Receiver (which uses 5000)
+    app.run(host='0.0.0.0', port=5001, debug=False)
