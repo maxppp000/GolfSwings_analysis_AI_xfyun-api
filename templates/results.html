@@ -446,8 +446,7 @@
                         <p>${data.description || 'No analysis results yet'}</p>
                     `;
                 })
-                .catch(error => {
-                    console.error('Failed to load analysis results:', error);
+                .catch(() => {
                     analysisContent.innerHTML = `
                         <h4>${actionName}</h4>
                         <p>Unable to load analysis results. Please try again later.</p>

@@ -516,8 +516,8 @@
             // Set video loop
             demoVideo.loop = true;
             // Autoplay (requires user interaction)
-            demoVideo.play().catch(function(error) {
-                console.log('Autoplay failed, user manual click required:', error);
+            demoVideo.play().catch(function() {
+                // Autoplay can fail silently; user interaction will resume playback.
             });
         }
         

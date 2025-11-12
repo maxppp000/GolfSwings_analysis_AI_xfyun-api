@@ -364,8 +364,7 @@
                         analysisContent.innerHTML = '<div class="no-data">No analysis results yet</div>';
                     }
                 })
-                .catch(error => {
-                    console.error('Failed to load analysis results:', error);
+                .catch(() => {
                     analysisContent.innerHTML = '<div class="no-data">Failed to load analysis results. Please try again later.</div>';
                 });
         }
